@@ -10,7 +10,7 @@ cap.set(3, 1280)
 # height
 cap.set(4, 720)
 
-model = YOLO('./yolo-weights/yolov8n.pt')
+model = YOLO('./yolo-weights/yolov8l.pt')
 
 classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
               "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
