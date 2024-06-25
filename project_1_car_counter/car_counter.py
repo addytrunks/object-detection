@@ -18,8 +18,20 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
               "teddy bear", "hair drier", "toothbrush"
               ]
 
+mask = cv2.imread("../images/mask.png")
+
 while True:
     succ, img = cap.read()
+
+    # if i dont do this, size and type mismatch error occurs between mask and img
+    if img.shape[:2] != mask.shape[:2]:
+        mask = cv2.resize(mask, (img.shape[1], img.shape[0]))
+
+    if img.dtype != mask.dtype:
+        mask = mask.astype(img.dtype)
+
+    # overlay mask on our main image
+    imgRegion = cv2.bitwise_and(img, mask)
 
     """Using stream=True enables: 
         Memory Efficiency 
@@ -27,7 +39,7 @@ while True:
         the model can provide immediate results without waiting for the entire video or image set to be processed.)
         Scalability            
     """
-    results = model(img, stream=True)
+    results = model(imgRegion, stream=True)
 
     # Looping through each detected objects
     for r in results:
@@ -40,16 +52,22 @@ while True:
             # cv2.rectangle(img, (x1, y1), (x2, y2), (0, 200, 0), 2)
 
             w, h = x2 - x1, y2 - y1
-            cvzone.cornerRect(img, (x1, y1, w, h), colorR=(220, 20, 60), colorC=(255, 0, 0), l=9)
 
             # Confidence
             conf = round(float(box.conf[0]), 2)
 
             # Class name
             cls = box.cls[0]
+            currentClass = classNames[int(cls)]
 
-            cvzone.putTextRect(img, f'{classNames[int(cls)]} {conf}', (max(0, x1), max(35, y1 - 10)),
-                               font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, thickness=2, colorR=(255, 255, 0),offset=5)
+            if (
+                    currentClass == "car" or currentClass == "truck" or currentClass == "bus" or currentClass == "motorbike") and (
+                    conf > 0.3):
+                cvzone.putTextRect(img, f'{classNames[int(cls)]} {conf}', (max(0, x1), max(35, y1 - 10)),
+                                   font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, thickness=2, colorR=(255, 255, 0),
+                                   offset=5)
+                cvzone.cornerRect(img, (x1, y1, w, h), colorR=(220, 20, 60), colorC=(255, 0, 0), l=9)
+
     cv2.imshow('img', img)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
