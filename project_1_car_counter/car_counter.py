@@ -92,11 +92,8 @@ while True:
         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
         w, h = x2 - x1, y2 - y1
 
-        # Draw bounding box and ID on the frame
+        # Draw bounding box on the frame
         cvzone.cornerRect(img, (x1, y1, w, h), colorR=(255, 0, 0), l=9, rt=2)
-        cvzone.putTextRect(img, f' {int(id)}', (max(0, x1), max(35, y1 - 10)),
-                           font=cv2.FONT_HERSHEY_SIMPLEX, scale=1.5, thickness=3, colorR=(255, 255, 0),
-                           offset=10)
 
         # Calculate the center of the bounding box
         cx, cy = (x1 + w) // 2, (y1 + h) // 2
