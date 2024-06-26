@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import cv2
 import cvzone
+from sort import *
 
 cap = cv2.VideoCapture('../images/cars.mp4')
 
@@ -19,6 +20,12 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
               ]
 
 mask = cv2.imread("../images/mask.png")
+
+# Tracker
+tracker = Sort(max_age=20, min_hits=3, iou_threshold=0.3)
+limits = [350, 310, 673, 310]
+
+totalCount = []
 
 while True:
     succ, img = cap.read()
@@ -40,6 +47,8 @@ while True:
         Scalability            
     """
     results = model(imgRegion, stream=True)
+
+    detections = np.empty((0, 5))
 
     # Looping through each detected objects
     for r in results:
@@ -63,10 +72,26 @@ while True:
             if (
                     currentClass == "car" or currentClass == "truck" or currentClass == "bus" or currentClass == "motorbike") and (
                     conf > 0.3):
-                cvzone.putTextRect(img, f'{classNames[int(cls)]} {conf}', (max(0, x1), max(35, y1 - 10)),
-                                   font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, thickness=2, colorR=(255, 255, 0),
-                                   offset=5)
-                cvzone.cornerRect(img, (x1, y1, w, h), colorR=(220, 20, 60), colorC=(255, 0, 0), l=9)
+                currentArray = np.array([x1, y1, x2, y2, conf])
+                detections = np.vstack((detections, currentArray))
+
+    resultsTracker = tracker.update(detections)
+    cv2.line(img, (limits[0], limits[1]), (limits[2], limits[3]), (0, 0, 255), 2)
+
+    for result in resultsTracker:
+        x1, y1, x2, y2, id = result
+        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+        w, h = x2 - x1, y2 - y1
+        cvzone.cornerRect(img, (x1, y1, w, h), colorR=(255, 0, 0), l=9, rt=2)
+        cx, cy = (x1 + w) // 2, (y1 + h) // 2
+
+        # If the centre of the car touches the line, it's a count
+        if limits[0] < cx+100 < limits[2] and limits[1] - 160 < cy < limits[1] + 160:
+            if totalCount.count(id) == 0:
+                totalCount.append(id)
+                cv2.line(img, (limits[0], limits[1]), (limits[2], limits[3]), (0, 255, 0), 2)
+
+    cvzone.putTextRect(img, f' Count: {len(totalCount)}', (50, 50))
 
     cv2.imshow('img', img)
 
